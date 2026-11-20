@@ -1,0 +1,135 @@
+{% extends 'absensi/base.html' %}
+{% block content %}
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-white pt-3 pb-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h5 class="mb-0 fw-bold text-primary"><i class='bx bx-group me-1'></i> Data Pengguna</h5>
+        <div class="d-flex align-items-center flex-wrap gap-2">
+            <form method="GET" class="d-flex gap-2">
+                <select name="rt" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">Semua RT</option>
+                    <option value="05" {% if filter_rt == '05' %}selected{% endif %}>RT 05</option>
+                    <option value="06" {% if filter_rt == '06' %}selected{% endif %}>RT 06</option>
+                    <option value="07" {% if filter_rt == '07' %}selected{% endif %}>RT 07</option>
+                    <option value="08" {% if filter_rt == '08' %}selected{% endif %}>RT 08</option>
+                    <option value="09" {% if filter_rt == '09' %}selected{% endif %}>RT 09</option>
+                </select>
+            </form>
+            {% if current_role == 'admin' %}
+                <button type="button" class="btn btn-outline-success btn-sm rounded-pill" data-bs-toggle="modal" data-bs-target="#modalImportExcel">
+                    <i class="bx bxs-file-import"></i> Import
+                </button>
+            {% endif %}
+            <button type="button" class="btn btn-info btn-sm rounded-pill" data-bs-toggle="modal" data-bs-target="#modalAddUser">
+                <i class="bx bx-plus"></i> Tambah
+            </button>
+        </div>
+    </div>
+
+    <div class="table-responsive text-nowrap">
+        <table class="table table-hover mb-0">
+            <thead class="table-light"><tr><th>Informasi User</th><th class="text-center">Aksi</th></tr></thead>
+            <tbody>
+                {% for u in page_obj %}
+                <tr>
+                    <td>
+                        <div class="fw-bold text-dark">{{ u.name|default:u.username }} {% if u.rt %}<span class="badge bg-light text-dark border">RT {{ u.rt }}</span>{% endif %}</div>
+                        <span class="badge bg-label-{% if u.role == 'admin' %}danger{% elif u.role == 'pengurus' %}primary{% else %}info{% endif %}">{{ u.role|upper }}</span>
+                    </td>
+                    <td class="text-center">
+                        {% if current_role == 'admin' or u.role != 'admin' %}
+                        <button type="button" class="btn btn-sm btn-outline-warning" onclick="openEditModal('{{ u.id }}', '{{ u.name|escapejs }}', '{{ u.username|escapejs }}', '{{ u.role }}', '{{ u.rt|default:'' }}')"><i class="bx bx-edit-alt"></i></button>
+                        {% if u.id != request.user.id %}
+                        <a href="{% url 'member_delete' u.id %}" class="btn btn-sm btn-danger" onclick="return confirm('Hapus user ini?')"><i class="bx bx-trash"></i></a>
+                        {% endif %}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="card-footer bg-white">
+        <ul class="pagination justify-content-center mb-0">
+            {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?hal={{ page_obj.previous_page_number }}&rt={{ filter_rt }}">Previous</a></li>{% endif %}
+            <li class="page-item active"><span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+            {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?hal={{ page_obj.next_page_number }}&rt={{ filter_rt }}">Next</a></li>{% endif %}
+        </ul>
+    </div>
+    {% endif %}
+</div>
+
+<div class="modal fade" id="modalAddUser" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-sm"><div class="modal-content">
+    <form method="POST">{% csrf_token %}<input type="hidden" name="action" value="add">
+        <div class="modal-header bg-primary text-white"><h5 class="modal-title text-white">Tambah User</h5></div>
+        <div class="modal-body">
+            <div class="mb-2"><input type="text" name="name" class="form-control" placeholder="Nama Lengkap" required></div>
+            <div class="mb-2"><input type="text" name="username" class="form-control" placeholder="Username" required></div>
+            <div class="mb-2"><input type="password" name="password" class="form-control" placeholder="Password" required></div>
+            <div class="row g-2">
+                <div class="col-7"><select name="role" class="form-select"><option value="member">ANGGOTA</option><option value="pengurus">PENGURUS</option>{% if current_role == 'admin' %}<option value="admin">ADMIN</option>{% endif %}</select></div>
+                <div class="col-5"><select name="rt" class="form-select"><option value="">- RT -</option><option value="05">05</option><option value="06">06</option><option value="07">07</option><option value="08">08</option><option value="09">09</option></select></div>
+            </div>
+        </div>
+        <div class="modal-footer"><button type="submit" class="btn btn-primary w-100">SIMPAN</button></div>
+    </form>
+</div></div></div>
+
+<div class="modal fade" id="modalEditUser" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-sm"><div class="modal-content">
+    <form method="POST">{% csrf_token %}<input type="hidden" name="action" value="edit"><input type="hidden" name="user_id" id="edit_user_id">
+        <div class="modal-header bg-warning"><h5 class="modal-title text-white">Edit User</h5></div>
+        <div class="modal-body">
+            <div class="mb-2"><input type="text" name="name" id="edit_name" class="form-control" required></div>
+            <div class="mb-2"><input type="text" name="username" id="edit_username" class="form-control" required></div>
+            <div class="row g-2 mb-2">
+                <div class="col-7"><select name="role" id="edit_role" class="form-select"><option value="member">ANGGOTA</option><option value="pengurus">PENGURUS</option>{% if current_role == 'admin' %}<option value="admin">ADMIN</option>{% endif %}</select></div>
+                <div class="col-5"><select name="rt" id="edit_rt" class="form-select"><option value="">- RT -</option><option value="05">05</option><option value="06">06</option><option value="07">07</option><option value="08">08</option><option value="09">09</option></select></div>
+            </div>
+            <input type="password" name="password" class="form-control" placeholder="Password Baru (Opsional)">
+        </div>
+        <div class="modal-footer"><button type="submit" class="btn btn-warning w-100">SIMPAN PERUBAHAN</button></div>
+    </form>
+</div></div></div>
+
+<div class="modal fade" id="modalImportExcel" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <form method="POST" action="{% url 'import_members_excel' %}" enctype="multipart/form-data" class="modal-content">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">Import Anggota dari Excel</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert bg-label-info small mb-3">
+                    Gunakan format kolom: <strong>Nama Lengkap | Username | Password | RT | Role</strong>.
+                    <div class="mt-2">
+                        <a href="{% url 'download_members_template' %}" class="btn btn-xs btn-info rounded-pill">
+                            <i class="bx bx-download me-1"></i> Unduh Template .xlsx
+                        </a>
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small fw-bold">PILIH FILE EXCEL (.XLSX)</label>
+                    <input type="file" name="excel_file" accept=".xlsx" class="form-control" required>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-success w-100">Mulai Import Data</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function openEditModal(id, name, username, role, rt) {
+    document.getElementById('edit_user_id').value = id;
+    document.getElementById('edit_name').value = name;
+    document.getElementById('edit_username').value = username;
+    document.getElementById('edit_role').value = role;
+    document.getElementById('edit_rt').value = rt;
+    new bootstrap.Modal(document.getElementById('modalEditUser')).show();
+}
+</script>
+{% endblock %}

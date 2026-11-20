@@ -1,0 +1,359 @@
+{% load static l10n %}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Anggota Kartar - Mobile</title>
+    <link rel="stylesheet" href="{% static 'assets/vendor/css/core.css' %}" />
+    <link rel="stylesheet" href="{% static 'assets/vendor/css/theme-default.css' %}" />
+    <link rel="stylesheet" href="{% static 'assets/vendor/fonts/boxicons.css' %}" />
+    <link rel="icon" type="image/png" href="{% static 'assets/img/logo_kartar2.png' %}" />
+    <link rel="manifest" href="{% static 'manifest.json' %}">
+    <meta name="theme-color" content="#696cff">
+
+    <style>
+        body { background-color: #f8f9fa; padding-bottom: 20px; }
+        .nav-pills { background: #fff; border: 1px solid #e7e7ff; padding: 5px; border-radius: 15px !important; }
+        .nav-pills .nav-link { padding: 10px 5px; font-size: 0.7rem; font-weight: 600; color: #a1acb8; border-radius: 12px !important; }
+        .nav-pills .nav-link i { display: block; font-size: 1.3rem; margin-bottom: 3px; }
+        .nav-pills .nav-link.active { background-color: #696cff !important; color: #fff !important; }
+        #camera-container, #camera-container-izin { width: 100%; max-width: 400px; margin: 0 auto; background: #000; border-radius: 20px; overflow: hidden; display: none; position: relative; aspect-ratio: 3/4; }
+        #video-preview, #video-preview-izin { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+        .btn-capture { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 70px; height: 70px; border: 5px solid rgba(255,255,255,0.5); background: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 20; }
+        #img-result, #img-result-izin { width: 100%; max-width: 300px; border-radius: 15px; display: none; margin: 15px auto; }
+        .event-header { background: linear-gradient(135deg, #696cff 0%, #3f42af 100%); color: white; padding: 20px; border-radius: 20px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+<div class="container-xxl container-p-y">
+    <div class="d-flex justify-content-between align-items-center mb-4 px-2">
+        <div class="d-flex align-items-center">
+            <img src="{% static 'assets/img/logo_kartar2.png' %}" alt="Logo" class="me-3" style="width: 50px;">
+            <div>
+                <span class="text-muted d-block small">Holaa...</span>
+                <h5 class="fw-bold m-0">{{ request.user.name|default:request.user.username }}</h5>
+            </div>
+            <div id="pwa-install-banner" class="alert bg-label-primary d-none justify-content-between align-items-center py-2 px-3 mb-3 rounded-3 shadow-sm">
+                <div class="small">
+                    <strong class="d-block"><i class="bx bx-mobile-alt"></i> Pasang di Layar Utama HP</strong>
+                    <span style="font-size: 0.72rem;">Akses absensi lebih cepat seperti aplikasi tanpa buka browser.</span>
+                </div>
+                <button type="button" id="btn-install-pwa" class="btn btn-primary btn-sm rounded-pill px-3 text-nowrap">Pasang</button>
+            </div>
+        </div>
+        <a href="{% url 'logout' %}" class="btn btn-icon btn-danger rounded-circle shadow-sm"><i class="bx bx-power-off"></i></a>
+    </div>
+
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }} p-2 small rounded-3">{{ message }}</div>
+    {% endfor %}
+
+    <ul class="nav nav-pills nav-fill mb-4 shadow-sm" role="tablist">
+        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#navs-absen"><i class="bx bx-scan"></i>Absen</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#navs-izin"><i class="bx bx-envelope"></i>Izin</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#navs-history"><i class="bx bx-time-five"></i>Riwayat</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#navs-profile"><i class="bx bx-user-circle"></i>Profil</button></li>
+    </ul>
+
+    <div class="tab-content p-0 bg-transparent shadow-none">
+        <div class="tab-pane fade show active" id="navs-absen">
+            {% if not event %}
+                <div class="card text-center p-5 shadow-sm"><h6>Tidak ada kegiatan aktif.</h6></div>
+            {% elif event_not_started %}
+                <div class="card text-center p-5 shadow-sm">
+                    <h5 class="text-warning fw-bold">Kegiatan Belum Dimulai</h5>
+                    <p class="text-muted mb-0">Dibuka pada {{ event.start_time|date:"d M Y, H:i" }} WIB</p>
+                </div>
+            {% elif event_expired %}
+                <div class="card bg-label-danger text-center p-5 shadow-sm"><h5 class="text-danger fw-bold">Waktu Habis</h5></div>
+            {% elif status_absensi == 'selesai' %}
+                <div class="card bg-label-success text-center p-5 shadow-sm">
+                    <h5 class="text-success fw-bold">Kegiatan Selesai!</h5>
+                    <p class="text-muted mb-0">{% if data_izin %}Anda sudah melakukan Izin.{% else %}Terima kasih telah berpartisipasi.{% endif %}</p>
+                </div>
+            {% else %}
+                <div class="event-header shadow">
+                    <h5 class="mb-0 fw-bold text-white">{{ event.title }}</h5>
+                    <small class="opacity-75">{{ event.start_time|date:"H:i" }} - {{ event.end_time|date:"H:i" }} WIB</small>
+                </div>
+                <div class="card shadow-sm mb-3"><div class="card-body p-4 text-center">
+                    <form method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <input type="hidden" class="lat-input" name="latitude">
+                        <input type="hidden" class="lon-input" name="longitude">
+                        <input type="hidden" name="type" value="{% if status_absensi == 'siap_masuk' %}in{% else %}out{% endif %}">
+                        <input type="file" name="selfie" class="real-file-input" style="display: none;">
+
+                        {% if status_absensi == 'siap_masuk' %}
+                            <div id="camera-container">
+                                <video id="video-preview" autoplay playsinline></video>
+                                <button type="button" class="btn-capture" onclick="takePicture('normal')"><i class="bx bx-camera"></i></button>
+                            </div>
+                            <canvas id="canvas-result" style="display:none;"></canvas>
+                            <img id="img-result">
+                            <button type="button" id="btnSelfieNormal" class="btn btn-outline-secondary w-100 rounded-pill mt-2" onclick="startCamera('normal')" disabled>
+                                <i class='bx bx-lock-alt'></i> Selfie Masuk (Terkunci)
+                            </button>
+                        {% else %}
+                        <div class="alert bg-label-info mb-2 p-3 text-start rounded-3">
+                            <small class="fw-bold d-block">Absen Masuk Tercatat: {{ data_in.created_at|date:"H:i" }} WIB</small>
+                            <small>Pencatatan pulang hanya mendeteksi GPS dan aktif 5 menit setelah absen masuk.</small>
+                        </div>
+                            {% if checkout_locked %}
+                            <div id="countdown-box" class="alert bg-label-warning mb-2 p-3 rounded-3">
+                                <i class="bx bx-time-five fs-4 d-block mb-1"></i>
+                                <small class="fw-bold d-block">Tombol Pulang Masih Terkunci</small>
+                                <small>Terbuka otomatis dalam <strong id="countdown-timer">05:00</strong></small>
+                            </div>
+                            {% endif %}
+                        {% endif %}
+
+                        <div id="box-status-absen" class="alert alert-warning rounded-3 p-3 my-3 border-0">
+                            <div id="status-lokasi-absen" class="small fw-bold">Menghubungkan GPS...</div>
+                        </div>
+                        <button type="submit" id="btnSubmit" class="btn w-100 btn-lg shadow {% if status_absensi == 'siap_masuk' %}btn-primary{% else %}btn-warning{% endif %}" disabled>{{ btn_label }}</button>
+                    </form>
+                </div></div>
+            {% endif %}
+        </div>
+
+        <div class="tab-pane fade" id="navs-izin">
+            {% if not event or status_absensi == 'selesai' or event_expired or event_not_started or data_in %}
+                <div class="card text-center p-5 shadow-sm"><h6 class="text-muted">Fitur izin tidak tersedia saat ini.</h6></div>
+            {% else %}
+                <div class="card shadow-sm"><div class="card-body p-4">
+                    <h5 class="fw-bold mb-3">Form Izin Anggota</h5>
+                    <form method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <input type="hidden" class="lat-input" name="latitude">
+                        <input type="hidden" class="lon-input" name="longitude">
+                        <input type="hidden" name="type" value="izin">
+                        <input type="file" name="selfie" id="izin-file-input" style="display: none;">
+                        <div class="mb-3"><label class="form-label small fw-bold">ALASAN TIDAK HADIR</label><textarea name="notes" class="form-control" required></textarea></div>
+                        <div class="text-center mb-3">
+                            <div id="camera-container-izin"><video id="video-preview-izin" autoplay playsinline></video><button type="button" class="btn-capture" onclick="takePicture('izin')"><i class="bx bx-camera"></i></button></div>
+                            <img id="img-result-izin">
+                            <button type="button" class="btn btn-sm btn-outline-secondary w-100 rounded-pill" onclick="startCamera('izin')">Ambil Foto Bukti</button>
+                        </div>
+                        <div class="bg-light p-2 mb-3 border rounded text-center"><div class="status-lokasi-izin small fw-bold text-warning">Menunggu Lokasi...</div></div>
+                        <button type="submit" id="btnSubmitIzin" class="btn btn-danger btn-lg w-100 shadow" disabled>KIRIM IZIN</button>
+                    </form>
+                </div></div>
+            {% endif %}
+        </div>
+
+        <div class="tab-pane fade" id="navs-history">
+            <div class="card shadow-sm p-2 mb-3">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light"><tr><th>Kegiatan</th><th class="text-center">DATANG</th><th class="text-center">PULANG</th></tr></thead>
+                    <tbody>
+                        {% for h in history_page %}
+                        <tr>
+                            <td><div class="fw-bold text-dark">{{ h.title }}</div><small>{{ h.status }}</small></td>
+                            <td class="text-center"><span class="badge bg-label-primary">{{ h.in }}</span></td>
+                            <td class="text-center"><span class="badge bg-label-warning">{{ h.out }}</span></td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3" class="text-center text-muted py-3">Belum ada riwayat absensi.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="navs-profile">
+            <div class="card shadow-sm border-0"><div class="card-body p-4">
+                <form method="POST">
+                    {% csrf_token %}<input type="hidden" name="update_profile" value="1">
+                    <div class="mb-3"><label class="form-label small fw-bold">NAMA LENGKAP</label><input type="text" name="name" class="form-control" value="{{ request.user.name }}" required></div>
+                    <div class="mb-3"><label class="form-label small fw-bold">USERNAME</label><input type="text" name="username" class="form-control" value="{{ request.user.username }}" required></div>
+                    <div class="mb-4"><label class="form-label small fw-bold">GANTI PASSWORD</label><input type="password" name="password" class="form-control" placeholder="Kosongkan jika tidak ganti"></div>
+                    <button type="submit" class="btn btn-primary btn-lg w-100 shadow">Simpan Perubahan</button>
+                </form>
+            </div></div>
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'assets/vendor/libs/jquery/jquery.js' %}"></script>
+<script src="{% static 'assets/vendor/js/bootstrap.js' %}"></script>
+<script>
+let hasLocation = false, isWithinRadius = false, hasPhotoNormal = false, hasPhotoIzin = false, videoStream = null;
+const isCheckoutMode = {% if status_absensi == 'siap_pulang' %}true{% else %}false{% endif %};
+let isCheckoutLocked = {% if checkout_locked %}true{% else %}false{% endif %};
+const unlockTimestamp = {{ checkout_unlock_ts|default:0 }};
+
+const targetLat = {% if event %}{{ event.lat|unlocalize }}{% else %}0{% endif %};
+const targetLon = {% if event %}{{ event.lon|unlocalize }}{% else %}0{% endif %};
+const maxRadius = {% if event %}{{ event.tolerance_meters }}{% else %}50{% endif %};
+
+function hitungJarakMeter(lat1, lon1, lat2, lon2) {
+    const R = 6371000;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function validateForms() {
+    const btnSelfie = document.getElementById('btnSelfieNormal');
+    if (btnSelfie) {
+        if (hasLocation && isWithinRadius) {
+            btnSelfie.disabled = false;
+            btnSelfie.className = 'btn btn-outline-primary w-100 rounded-pill mt-2';
+            btnSelfie.innerHTML = "<i class='bx bx-camera'></i> Selfie Masuk";
+        } else {
+            btnSelfie.disabled = true;
+            btnSelfie.className = 'btn btn-outline-secondary w-100 rounded-pill mt-2';
+            btnSelfie.innerHTML = "<i class='bx bx-lock-alt'></i> Selfie Masuk (Lokasi Belum Sesuai)";
+        }
+    }
+
+    const btnSubmit = document.getElementById('btnSubmit');
+    if (btnSubmit) {
+        if (isCheckoutMode) {
+            btnSubmit.disabled = !(hasLocation && isWithinRadius && !isCheckoutLocked);
+        } else {
+            btnSubmit.disabled = !(hasLocation && isWithinRadius && hasPhotoNormal);
+        }
+    }
+
+    if (document.getElementById('btnSubmitIzin')) {
+        document.getElementById('btnSubmitIzin').disabled = !(hasLocation && hasPhotoIzin);
+    }
+}
+
+if (isCheckoutLocked && unlockTimestamp > 0) {
+    const timerInterval = setInterval(() => {
+        const diff = unlockTimestamp - Date.now();
+        if (diff <= 0) {
+            clearInterval(timerInterval);
+            isCheckoutLocked = false;
+            const box = document.getElementById('countdown-box');
+            if (box) box.style.display = 'none';
+            validateForms();
+        } else {
+            const mins = Math.floor(diff / 60000);
+            const secs = Math.floor((diff % 60000) / 1000);
+            const timerEl = document.getElementById('countdown-timer');
+            if (timerEl) {
+                timerEl.innerText = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+            }
+        }
+    }, 1000);
+}
+
+function getLocation() {
+    const boxAbsen = document.getElementById('box-status-absen');
+    const statusAbsen = document.getElementById('status-lokasi-absen');
+    const statusIzin = document.querySelector('.status-lokasi-izin');
+
+    if (navigator.geolocation) {
+        navigator.geolocation.watchPosition((pos) => {
+            const uLat = pos.coords.latitude;
+            const uLon = pos.coords.longitude;
+
+            document.querySelectorAll('.lat-input').forEach(i => i.value = uLat);
+            document.querySelectorAll('.lon-input').forEach(i => i.value = uLon);
+
+            hasLocation = true;
+            if (statusIzin) {
+                statusIzin.innerHTML = "Lokasi Izin Terkunci";
+                statusIzin.className = "status-lokasi-izin small fw-bold text-success";
+            }
+
+            const jarak = Math.round(hitungJarakMeter(uLat, uLon, targetLat, targetLon));
+            if (jarak <= maxRadius) {
+                isWithinRadius = true;
+                if (boxAbsen && statusAbsen) {
+                    boxAbsen.className = "alert alert-success rounded-3 p-3 my-3 border-0";
+                    statusAbsen.innerHTML = `<i class='bx bx-check-circle me-1'></i> Lokasi Sesuai! Jarak Anda ${jarak}m (Maks ${maxRadius}m)`;
+                }
+            } else {
+                isWithinRadius = false;
+                if (boxAbsen && statusAbsen) {
+                    boxAbsen.className = "alert alert-danger rounded-3 p-3 my-3 border-0";
+                    statusAbsen.innerHTML = `<i class='bx bx-error-circle me-1'></i> Peringatan: Lokasi belum sesuai! Jarak Anda ${jarak}m (Maks ${maxRadius}m). Silakan mendekat ke lokasi acara.`;
+                }
+            }
+            validateForms();
+        }, () => {
+            hasLocation = false;
+            isWithinRadius = false;
+            if (boxAbsen && statusAbsen) {
+                boxAbsen.className = "alert alert-danger rounded-3 p-3 my-3 border-0";
+                statusAbsen.innerText = "Gagal membaca GPS. Aktifkan izin lokasi lalu refresh halaman!";
+            }
+            if (statusIzin) statusIzin.innerText = "Gagal GPS. Refresh halaman!";
+            validateForms();
+        }, { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 });
+    }
+}
+window.onload = getLocation;
+
+async function startCamera(mode) {
+    if (mode === 'normal' && (!hasLocation || !isWithinRadius)) {
+        alert("Peringatan: Lokasi Anda belum sesuai dengan radius kegiatan! Silakan mendekat ke lokasi acara terlebih dahulu.");
+        return;
+    }
+    const container = document.getElementById(mode === 'normal' ? 'camera-container' : 'camera-container-izin');
+    const video = document.getElementById(mode === 'normal' ? 'video-preview' : 'video-preview-izin');
+    container.style.display = 'block';
+    if(videoStream) videoStream.getTracks().forEach(t => t.stop());
+    videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+    video.srcObject = videoStream;
+}
+
+function takePicture(mode) {
+    const video = document.getElementById(mode === 'normal' ? 'video-preview' : 'video-preview-izin');
+    const canvas = document.getElementById('canvas-result');
+    const img = document.getElementById(mode === 'normal' ? 'img-result' : 'img-result-izin');
+    const container = document.getElementById(mode === 'normal' ? 'camera-container' : 'camera-container-izin');
+    const input = mode === 'normal' ? document.querySelector('.real-file-input') : document.getElementById('izin-file-input');
+
+    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.translate(canvas.width, 0); ctx.scale(-1, 1);
+    ctx.drawImage(video, 0, 0);
+    if(videoStream) videoStream.getTracks().forEach(t => t.stop());
+    container.style.display = 'none';
+    img.src = canvas.toDataURL('image/jpeg'); img.style.display = 'block';
+
+    canvas.toBlob(blob => {
+        const file = new File([blob], "selfie.jpg", { type: "image/jpeg" });
+        const dt = new DataTransfer(); dt.items.add(file);
+        input.files = dt.files;
+        if(mode === 'normal') hasPhotoNormal = true; else hasPhotoIzin = true;
+        validateForms();
+    }, 'image/jpeg');
+}
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register("{% static 'sw.js' %}").catch(() => {});
+}
+
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    const banner = document.getElementById('pwa-install-banner');
+    if (banner) {
+        banner.classList.remove('d-none');
+        banner.classList.add('d-flex');
+    }
+});
+
+document.getElementById('btn-install-pwa')?.addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+        document.getElementById('pwa-install-banner').classList.add('d-none');
+    }
+    deferredPrompt = null;
+});
+</script>
+</body>
+</html>

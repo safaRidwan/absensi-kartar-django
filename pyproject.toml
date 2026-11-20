@@ -1,0 +1,30 @@
+[project]
+name = "website-django"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Musafa Ridwan", email = "l200240169@student.ums.ac.id" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "cloudinary>=1.47.0",
+    "dj-database-url>=3.1.2",
+    "django>=5.2.17",
+    "django-cloudinary-storage>=0.3.0",
+    "gunicorn>=27.0.1",
+    "openpyxl>=3.1.5",
+    "pillow>=13.0.0",
+    "psycopg2-binary>=2.9.13",
+    "pymysql>=1.2.4",
+    "whitenoise>=6.12.0",
+]
+
+[project.scripts]
+website-django = "website_django:main"
+
+[build-system]
+requires = ["uv_build>=0.12.23,<0.13.0"]
+build-backend = "uv_build"
+[tool.vercel]
+entrypoint = "core.wsgi:application"

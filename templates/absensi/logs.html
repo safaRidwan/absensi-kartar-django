@@ -1,0 +1,160 @@
+{% extends 'absensi/base.html' %}
+{% block title %}Log Absensi - Karang Taruna{% endblock %}
+
+{% block content %}
+<div class="card mb-3 border-0">
+    <div class="card-body p-3">
+        <h6 class="fw-bold mb-3 text-primary"><i class="bx bx-filter-alt me-1"></i> Filter Log Kehadiran</h6>
+        <form method="GET" class="row g-2">
+            <div class="col-8 col-md-8">
+                <select name="event_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                    {% for ev in all_events %}
+                        <option value="{{ ev.id }}" {% if selected_event and selected_event.id == ev.id %}selected{% endif %}>
+                            {{ ev.title }} ({{ ev.start_time|date:"d M Y" }})
+                        </option>
+                    {% empty %}
+                        <option value="">Belum ada kegiatan</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-4 col-md-4">
+                <select name="rt" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">Semua RT</option>
+                    <option value="05" {% if filter_rt == '05' %}selected{% endif %}>RT 05</option>
+                    <option value="06" {% if filter_rt == '06' %}selected{% endif %}>RT 06</option>
+                    <option value="07" {% if filter_rt == '07' %}selected{% endif %}>RT 07</option>
+                    <option value="08" {% if filter_rt == '08' %}selected{% endif %}>RT 08</option>
+                    <option value="09" {% if filter_rt == '09' %}selected{% endif %}>RT 09</option>
+                </select>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card overflow-hidden border-0">
+    <div class="card-header bg-white border-bottom py-3 px-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h6 class="mb-0 fw-bold">{{ selected_event.title|default:"Tidak ada kegiatan" }}</h6>
+            {% if selected_event %}
+                <small class="text-muted" style="font-size: 0.75rem;">{{ selected_event.start_time|date:"d M Y, H:i" }} - {{ selected_event.end_time|date:"H:i" }} WIB</small>
+            {% endif %}
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-label-primary">{{ logs|length }} Hadir/Izin</span>
+            {% if selected_event %}
+                <button type="button" class="btn btn-outline-success btn-sm rounded-pill px-3" onclick="salinLaporanWA()">
+                    <i class="bx bxl-whatsapp me-1"></i> Salin WA
+                </button>
+                <a href="{% url 'export_attendance_excel' %}?event_id={{ selected_event.id }}&rt={{ filter_rt }}" class="btn btn-success btn-sm rounded-pill px-3">
+                    <i class="bx bxs-file-export me-1"></i> Excel
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light text-center">
+                <tr>
+                    <th class="text-start">Anggota</th>
+                    <th>Datang</th>
+                    <th>Pulang</th>
+                    <th>Foto</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr class="text-center">
+                    <td class="text-start" style="max-width: 145px;">
+                        <div class="fw-semibold text-dark text-truncate">{{ log.name }}</div>
+                        <small class="text-muted" style="font-size: 0.7rem;">RT {{ log.rt }}</small>
+                        {% if log.notes %}
+                            <small class="text-danger d-block text-truncate" style="font-size: 0.7rem;">{{ log.notes }}</small>
+                        {% endif %}
+                    </td>
+                    <td><span class="badge bg-label-primary">{{ log.in_time }}</span></td>
+                    <td><span class="badge bg-label-warning">{{ log.out_time }}</span></td>
+                    <td>
+                        {% if log.selfie_url %}
+                        <button type="button" class="btn btn-sm btn-icon btn-outline-info rounded-circle" onclick="lihatFoto('{{ log.name|escapejs }}', '{{ log.selfie_url }}', '{{ log.notes|escapejs }}')">
+                            <i class="bx bx-image"></i>
+                        </button>
+                    {% else %}
+                        <span class="text-muted small" title="Foto tidak tersedia / sudah terhapus otomatis">-</span>
+                    {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="text-center py-4 text-muted small">Belum ada data kehadiran pada kegiatan ini.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Preview Foto Selfie -->
+<div class="modal fade" id="modalFotoSelfie" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title fw-bold" id="modalFotoNama">Foto Absensi</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center p-2">
+                <img id="modalFotoImg" src="" alt="Selfie Anggota" class="img-fluid rounded-3 mb-2" style="max-height: 360px; object-fit: cover;">
+                <p id="modalFotoNotes" class="small text-muted mb-0"></p>
+            </div>
+        </div>
+    </div>
+</div>
+<textarea id="waReportSource" class="d-none">{{ wa_report_text }}</textarea>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function lihatFoto(nama, url, notes) {
+    document.getElementById('modalFotoNama').innerText = nama;
+    document.getElementById('modalFotoImg').src = url;
+    const notesEl = document.getElementById('modalFotoNotes');
+    notesEl.innerText = notes ? 'Keterangan: ' + notes : '';
+    new bootstrap.Modal(document.getElementById('modalFotoSelfie')).show();
+}
+
+function salinLaporanWA() {
+    const source = document.getElementById('waReportSource');
+    if (!source || !source.value.trim()) {
+        alert('Data laporan kosong. Pastikan sudah memilih kegiatan.');
+        return;
+    }
+
+    const tempInput = document.createElement('textarea');
+    tempInput.value = source.value;
+    tempInput.style.position = 'fixed';
+    tempInput.style.top = '0';
+    tempInput.style.left = '0';
+    tempInput.style.opacity = '0';
+    document.body.appendChild(tempInput);
+
+    tempInput.focus();
+    tempInput.select();
+    tempInput.setSelectionRange(0, 99999);
+
+    try {
+        const berhasil = document.execCommand('copy');
+        if (berhasil) {
+            alert('Rekap absensi berhasil disalin! Silakan Paste di grup WhatsApp.');
+        } else {
+            navigator.clipboard.writeText(source.value).then(() => {
+                alert('Rekap absensi berhasil disalin! Silakan Paste di grup WhatsApp.');
+            });
+        }
+    } catch (err) {
+        alert('Gagal menyalin otomatis. Silakan salin manual.');
+    }
+
+    document.body.removeChild(tempInput);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,22 @@
+{
+  "name": "Absensi Karang Taruna Manunggal Putra",
+  "short_name": "Absensi Kartar",
+  "description": "Sistem Presensi Digital Karang Taruna Manunggal Putra Gentungan",
+  "start_url": "/member/",
+  "display": "standalone",
+  "background_color": "#f8f9fa",
+  "theme_color": "#696cff",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/static/assets/img/logo_kartar2.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/assets/img/logo_kartar2.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>Login - Karang Taruna</title>
+    <link rel="stylesheet" href="{% static 'assets/vendor/fonts/boxicons.css' %}" />
+    <link rel="stylesheet" href="{% static 'assets/vendor/css/core.css' %}" />
+    <link rel="stylesheet" href="{% static 'assets/vendor/css/theme-default.css' %}" />
+    <link rel="icon" type="image/png" href="{% static 'assets/img/logo_kartar2.png' %}" />
+    <style>
+        body { background: #f5f5f9; }
+        .container-login { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+        .card-login { width: 100%; max-width: 400px; box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1); border-radius: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container-login">
+        <div class="card card-login">
+            <div class="card-body">
+                <div class="d-flex justify-content-center mb-3">
+                    <img src="{% static 'assets/img/logo_kartar2.png' %}" alt="Logo" style="width: 80px;">
+                </div>
+                <h4 class="mb-2 fw-bold text-center">Selamat Datang 👋</h4>
+                <p class="mb-4 text-center text-muted small">Silahkan login sistem absensi <br><strong>Karang Taruna Manunggal Putra</strong></p>
+
+                {% for message in messages %}
+                    <div class="alert alert-danger p-2 small">{{ message }}</div>
+                {% endfor %}
+
+                <form method="POST">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Username</label>
+                        <div class="input-group input-group-merge">
+                            <span class="input-group-text"><i class="bx bx-user"></i></span>
+                            <input type="text" class="form-control" name="username" placeholder="Username" required autofocus>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Password</label>
+                        <div class="input-group input-group-merge">
+                            <span class="input-group-text"><i class="bx bx-lock-alt"></i></span>
+                            <input type="password" class="form-control" name="password" placeholder="············" required>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary d-grid w-100 btn-lg shadow mt-4" type="submit">LOGIN</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

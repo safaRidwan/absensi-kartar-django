@@ -1,0 +1,224 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="id" class="light-style layout-menu-fixed" dir="ltr" data-theme="theme-default">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
+    <title>{% block title %}Karang Taruna Manunggal Putra{% endblock %}</title>
+
+    <link rel="icon" type="image/png" href="{% static 'assets/img/logo_kartar2.png' %}" />
+    <link rel="stylesheet" href="{% static 'assets/vendor/fonts/boxicons.css' %}" />
+    <link rel="stylesheet" href="{% static 'assets/vendor/css/core.css' %}" class="template-customizer-core-css" />
+    <link rel="stylesheet" href="{% static 'assets/vendor/css/theme-default.css' %}" class="template-customizer-theme-css" />
+    <link rel="stylesheet" href="{% static 'assets/css/demo.css' %}" />
+    <link rel="stylesheet" href="{% static 'assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css' %}" />
+
+    <style>
+        /* Optimasi Mobile */
+        @media (max-width: 1199.98px) {
+            body {
+                padding-bottom: 72px; /* Ruang untuk bottom navbar */
+            }
+            .container-p-y {
+                padding-top: 0.85rem !important;
+                padding-bottom: 1rem !important;
+            }
+            .layout-navbar {
+                margin-top: 0.5rem !important;
+                border-radius: 14px !important;
+            }
+        }
+
+        /* Bottom Navigation Bar Khusus Mobile */
+        .mobile-bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 64px;
+            background: #ffffff;
+            border-top: 1px solid #eceef1;
+            box-shadow: 0 -4px 16px rgba(67, 89, 113, 0.08);
+            z-index: 1050;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+        .mobile-bottom-nav a {
+            flex: 1;
+            text-align: center;
+            color: #8592a3;
+            text-decoration: none;
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 6px 0;
+            transition: all 0.2s ease;
+        }
+        .mobile-bottom-nav a i {
+            display: block;
+            font-size: 1.35rem;
+            margin-bottom: 2px;
+        }
+        .mobile-bottom-nav a.active {
+            color: #696cff;
+        }
+        .mobile-bottom-nav a.active i {
+            transform: translateY(-2px);
+        }
+
+        .card {
+            border-radius: 14px;
+            box-shadow: 0 2px 10px rgba(67, 89, 113, 0.06);
+        }
+    </style>
+
+    <script src="{% static 'assets/vendor/js/helpers.js' %}"></script>
+    <script src="{% static 'assets/js/config.js' %}"></script>
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+    <div class="layout-wrapper layout-content-navbar">
+        <div class="layout-container">
+            <!-- Sidebar Sneat (Desktop & Slide-out Mobile) -->
+            <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
+                <div class="app-brand demo py-3">
+                    <a href="{% url 'admin_dashboard' %}" class="app-brand-link">
+                        <span class="app-brand-logo demo">
+                            <img src="{% static 'assets/img/logo_kartar2.png' %}" alt="Logo" width="36">
+                        </span>
+                        <span class="app-brand-text demo menu-text fw-bolder ms-2 text-capitalize" style="font-size: 1.15rem;">Manunggal Putra</span>
+                    </a>
+                    <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto d-block d-xl-none">
+                        <i class="bx bx-chevron-left bx-sm align-middle"></i>
+                    </a>
+                </div>
+
+                <div class="menu-inner-shadow"></div>
+
+                <ul class="menu-inner py-1">
+                    <li class="menu-item {% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}">
+                        <a href="{% url 'admin_dashboard' %}" class="menu-link">
+                            <i class="menu-icon tf-icons bx bx-home-circle"></i>
+                            <div>Dashboard</div>
+                        </a>
+                    </li>
+
+                    <li class="menu-header small text-uppercase">
+                        <span class="menu-header-text">Manajemen</span>
+                    </li>
+
+                    <li class="menu-item {% if 'event' in request.resolver_match.url_name %}active{% endif %}">
+                        <a href="{% url 'event_create' %}" class="menu-link">
+                            <i class="menu-icon tf-icons bx bx-calendar-event"></i>
+                            <div>Buat Kegiatan</div>
+                        </a>
+                    </li>
+
+                    <li class="menu-item {% if 'member' in request.resolver_match.url_name %}active{% endif %}">
+                        <a href="{% url 'members_list' %}" class="menu-link">
+                            <i class="menu-icon tf-icons bx bx-group"></i>
+                            <div>Data Anggota</div>
+                        </a>
+                    </li>
+                    <li class="menu-item {% if request.resolver_match.url_name == 'attendance_logs' %}active{% endif %}">
+                        <a href="{% url 'attendance_logs' %}" class="menu-link">
+                            <i class="menu-icon tf-icons bx bx-list-check"></i>
+                            <div>Log Absensi</div>
+                        </a>
+                    </li>
+
+                    <li class="menu-header small text-uppercase">
+                        <span class="menu-header-text">Akun</span>
+                    </li>
+
+                    <li class="menu-item">
+                        <a href="{% url 'member_dashboard' %}" class="menu-link">
+                            <i class="menu-icon tf-icons bx bx-scan"></i>
+                            <div>Halaman Absen</div>
+                        </a>
+                    </li>
+
+                    <li class="menu-item">
+                        <a href="{% url 'logout' %}" class="menu-link text-danger">
+                            <i class="menu-icon tf-icons bx bx-power-off"></i>
+                            <div>Logout</div>
+                        </a>
+                    </li>
+                </ul>
+            </aside>
+            <!-- / Sidebar -->
+
+            <div class="layout-page">
+                <!-- Header Bersih Khusus Mobile -->
+                <div class="d-flex d-xl-none justify-content-between align-items-center px-3 pt-3 pb-1">
+                    <div class="d-flex align-items-center">
+                        <img src="{% static 'assets/img/logo_kartar2.png' %}" alt="Logo" width="42" class="me-2">
+                        <div>
+                            <small class="text-muted d-block" style="font-size: 0.72rem; line-height: 1.1;">Panel Admin</small>
+                            <h6 class="fw-bold mb-0 text-dark">{{ request.user.name|default:request.user.username|truncatechars:18 }}</h6>
+                        </div>
+                    </div>
+                    <a href="{% url 'logout' %}" class="btn btn-icon btn-danger rounded-circle shadow-sm" title="Logout">
+                        <i class="bx bx-power-off"></i>
+                    </a>
+                </div>
+
+<!-- Navbar Atas (Khusus Desktop) -->
+<nav class="layout-navbar container-xxl navbar navbar-expand-xl navbar-detached align-items-center bg-navbar-theme d-none d-xl-flex" id="layout-navbar">
+    <div class="navbar-nav-right d-flex align-items-center justify-content-between w-100" id="navbar-collapse">
+        <span class="fw-bold text-primary">Sistem Absensi Karang Taruna</span>
+        <span class="badge bg-label-primary">{{ request.user.name|default:request.user.username }}</span>
+    </div>
+</nav>
+
+                <div class="content-wrapper">
+                    <div class="container-xxl flex-grow-1 container-p-y">
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show py-2 small" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+
+                        {% block content %}{% endblock %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="layout-overlay layout-menu-toggle"></div>
+    </div>
+
+    <!-- Bottom Navigation Bar Khusus Mobile -->
+    <nav class="mobile-bottom-nav d-xl-none">
+        <a href="{% url 'admin_dashboard' %}" class="{% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}">
+            <i class="bx bx-home-circle"></i>
+            <span>Beranda</span>
+        </a>
+        <a href="{% url 'attendance_logs' %}" class="{% if request.resolver_match.url_name == 'attendance_logs' %}active{% endif %}">
+            <i class="bx bx-list-check"></i>
+            <span>Log Absen</span>
+        </a>
+        <a href="{% url 'event_create' %}" class="{% if 'event' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="bx bx-calendar-plus"></i>
+            <span>Kegiatan</span>
+        </a>
+        <a href="{% url 'members_list' %}" class="{% if 'member' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="bx bx-group"></i>
+            <span>Anggota</span>
+        </a>
+        <a href="{% url 'member_dashboard' %}">
+            <i class="bx bx-scan"></i>
+            <span>Absen</span>
+        </a>
+    </nav>
+
+    <script src="{% static 'assets/vendor/libs/jquery/jquery.js' %}"></script>
+    <script src="{% static 'assets/vendor/libs/popper/popper.js' %}"></script>
+    <script src="{% static 'assets/vendor/js/bootstrap.js' %}"></script>
+    <script src="{% static 'assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js' %}"></script>
+    <script src="{% static 'assets/vendor/js/menu.js' %}"></script>
+    <script src="{% static 'assets/js/main.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
